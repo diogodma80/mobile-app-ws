@@ -2,6 +2,7 @@ package com.dma.app.ws.service.impl;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.dma.app.ws.UserRepository;
@@ -18,6 +19,9 @@ public class UserServiceImpl implements UserService {
 	
 	@Autowired
 	Utils utils;
+	
+	@Autowired
+	BCryptPasswordEncoder bCryptPasswordEncoder;
 
 	@Override
 	public UserDto createUser(UserDto user) {
@@ -29,7 +33,8 @@ public class UserServiceImpl implements UserService {
 		
 		String publicUserId = utils.generateUserId(30);
 		userEntity.setUserId(publicUserId);
-		userEntity.setEncryptedPassword("test");
+		// password will be encrypted before saved to the database
+		userEntity.setEncryptedPassword(bCryptPasswordEncoder.encode(user.getPassword()));
 		
 		UserEntity storedUserDetails = userRepository.save(userEntity);
 		
