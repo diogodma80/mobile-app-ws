@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 
-
 public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
 	public AuthenticationFilter(AuthenticationManager authenticationManager) {
@@ -47,5 +46,21 @@ public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	protected void successfulAuthentication(HttpServletRequest req, HttpServletResponse res, FilterChain chain,
+			Authentication auth) throws IOException, ServletException {
+
+		byte[] secretKeyBytes = Base64.getEncoder().encode(SecurityConstants.TOKEN_SECRET.getBytes());
+		SecretKey secretKey = new SecretKeySpec(secretKeyBytes, SignatureAlgorithm.HS512.getJcaName());
+		Instant now = Instant.now();
+
+		String userName = ((User) auth.getPrincipal()).getUsername();
+		String token = Jwts.builder().setSubject(userName)
+				.setExpiration(Date.from(now.plusMillis(SecurityConstants.EXPIRATION_TIME))).setIssuedAt(Date.from(now))
+				.signWith(secretKey, SignatureAlgorithm.HS512).compact();
+
+		res.addHeader(SecurityConstants.HEADER_STRING, SecurityConstants.TOKEN_PREFIX + token);
 	}
 }
